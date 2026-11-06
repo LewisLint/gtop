@@ -9,6 +9,7 @@ import (
 
 	"github.com/charmbracelet/x/term"
 	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/shirou/gopsutil/v4/process"
 )
 
@@ -28,12 +29,11 @@ func main() {
 		//		}
 		//		fmt.Printf("%v\r", usage)
 
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(750 * time.Millisecond)
 
 		cmd := exec.Command("clear")
 		cmd.Stdout = os.Stdout
 		cmd.Run()
-		fmt.Printf("Cpu usage:\n\n")
 		gdraw()
 
 		for r, num := range proc(w / 2) {
@@ -67,6 +67,90 @@ func check(err error) {
 }
 
 func ram() {
+	mem, e := mem.VirtualMemory()
+	if e != nil {
+		fmt.Printf("RAM: %v", e)
+		return
+	}
+	bw := w/2 - 29
+	if bw < 1 {
+		fmt.Printf("RAM: %.1v%%", mem.UsedPercent)
+		return
+	}
+	fld := int(mem.UsedPercent / 100 * float64(bw))
+	fmt.Printf("RAM %.1f%% [", mem.UsedPercent)
+	for x := 0; x < bw; x++ {
+		if x < fld {
+			fmt.Printf("█")
+		} else {
+			{
+				{
+					{
+						{
+							{
+								{
+									{
+										{
+											{
+												{
+													{
+														{
+															{
+																{
+																	{
+																		{
+																			{
+																				{
+																					{
+																						{
+																							{
+																								{
+																									{
+																										{
+																											{
+																												{
+																													{
+																														{
+																															{
+																																{
+																																	{
+																																		fmt.Printf(" ")
+																																	}
+																																}
+																															}
+																														}
+																													}
+																												}
+																											}
+																										}
+																									}
+																								}
+																							}
+																						}
+																					}
+																				}
+																			}
+																		}
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	used := float64(mem.Used)
+	total := float64(mem.Total)
+	fmt.Printf("] %.1f/%.1f GiB", used, total)
 }
 func lscpu() (float64, error) {
 	cpu, e := cpu.Percent(0, true)
@@ -142,13 +226,33 @@ func gdraw() {
 		x := gw - len(hist) + col + 1
 		height := samp / 100 * float64(gh*upc)
 
-		color := "\x1b[32m"
-		if samp >= 60 {
-			color = "\x1b[33m"
+		//		color := "\x1b[32m"
+		//		if samp >= 60 {
+		//			color = "\x1b[33m"
+		//		}
+		//		if samp >= 85 {
+		//			color = "\x1b[31m"
+		//		}
+
+		if samp < 0 {
+			samp = 0
 		}
-		if samp >= 85 {
-			color = "\x1b[31m"
+		if samp > 100 {
+			samp = 100
 		}
+
+		var r, g int
+		if samp <= 50 {
+			t := samp / 50
+			r = int(50 + 205*t)
+			g = int(200 + 55*t)
+		} else {
+			t := (samp - 50) / 50
+			r = 255
+			g = int(255 * (1 - t))
+		}
+
+		color := fmt.Sprintf("\x1b[38;2;%d;%d;0m", r, g)
 
 		for row := 1; row <= gh; row++ {
 			fill := int(math.Ceil(height - float64((row-1)*upc)))
@@ -173,4 +277,10 @@ func gdraw() {
 			}
 		}
 	}
+	mv(1, gy+gh)
+	for range gw {
+		fmt.Printf("-")
+	}
+	mv(1, gy+gh+1)
+	ram()
 }
